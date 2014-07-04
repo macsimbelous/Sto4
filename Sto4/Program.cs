@@ -199,7 +199,7 @@ namespace Sto4
             {
                 if (img.tags.Count > 0)
                 {
-                    List<int> tag_ids = get_tag_ids_MySql(img.tags);
+                    List<int> tag_ids = GetTagIDs(img.tags);
                     InsertImageTagsMass((int)img.id, tag_ids);
                 }
             }
@@ -219,6 +219,36 @@ namespace Sto4
             {
                 ins_command.ExecuteNonQuery();
             }
+        }
+        static List<int> GetTagIDs(List<string> tags)
+        {
+            List<int> ids = new List<int>();
+            StringBuilder ins_quwery = new StringBuilder("SELECT tag_id FROM tags WHERE ");
+            for (int i = 0; i < tags.Count; i++)
+            {
+                if (i == 0)
+                {
+                    ins_quwery.Append("tag = '");
+                    ins_quwery.Append(MySqlHelper.EscapeString(tags[i]));
+                    ins_quwery.Append("'");
+                }
+                else
+                {
+                    ins_quwery.Append(" OR tag = '");
+                    ins_quwery.Append(MySqlHelper.EscapeString(tags[i])); 
+                    ins_quwery.Append("'");
+                }
+            }
+            using (MySqlCommand command = new MySqlCommand(ins_quwery.ToString(), myqslconn))
+            {
+                MySqlDataReader reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    ids.Add((int)reader[0]);
+                }
+                reader.Close();
+            }
+            return ids;
         }
         static List<string> GetAllUntiqeTags(List<CImage> img_list)
         {
