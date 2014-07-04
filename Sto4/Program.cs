@@ -64,10 +64,10 @@ namespace Sto4
             #endregion
             myqslconn = new MySqlConnection("server=localhost;User Id=root;password=050782;Persist Security Info=True;database=erza");
             myqslconn.Open();
-            //ExportTagsToMariaDB(img_list);
-            //ExportImagesToMariaDB(img_list);
-            //ExportImageTagsToMariaDB(img_list);
-            UpdateUriToMariaDB(img_list);
+            ExportTagsToMariaDB(img_list);
+            ExportImagesToMariaDB(img_list);
+            ExportImageTagsToMariaDB(img_list);
+            //UpdateUriToMariaDB(img_list);
             myqslconn.Close();
             #region sqlite_main 
             /*Sto4.Program.connection = new SQLiteConnection("data source=\"C:\\Users\\macs\\Dropbox\\utils\\Erza\\erza4.sqlite\"");
@@ -200,38 +200,24 @@ namespace Sto4
                 if (img.tags.Count > 0)
                 {
                     List<int> tag_ids = get_tag_ids_MySql(img.tags);
-                    foreach (int tid in tag_ids)
-                    {
-                        it.Add(new image_tags(tid, (int)img.id));
-                    }
+                    InsertImageTagsMass((int)img.id, tag_ids);
                 }
             }
             Console.WriteLine("Размер image_tags: {0}\n", it.Count);
-            /*img_list.Clear();
-            img_list = null;
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-            GC.WaitForPendingFinalizers();*/
-            int iii = 0;
-            /*using (StreamWriter outfile = new StreamWriter(@".\image_tags.csv"))
+        }
+        static void InsertImageTagsMass(int image_id, List<int> tag_ids)
+        {
+            StringBuilder sql = new StringBuilder();
+            sql.Append("INSERT IGNORE INTO image_tags (image_id, tag_id) VALUES ");
+            for (int i = 0; i < tag_ids.Count; i++)
             {
-                foreach (image_tags image_tags_item in it)
-                {
-                    outfile.WriteLine("{0};{1}", image_tags_item.image_id, image_tags_item.tag_id);
-                    Console.Write("\r" + (iii++).ToString("######"));
-                }
-            }*/
-            foreach (image_tags image_tags_item in it)
+                if (i > 0) sql.Append(", ");
+                sql.Append("(" + image_id.ToString() + ", " + tag_ids[i].ToString() + ")");
+            }
+            sql.Append(";");
+            using (MySqlCommand ins_command = new MySqlCommand(sql.ToString(), myqslconn))
             {
-                string ins = "INSERT IGNORE INTO image_tags (image_id, tag_id) VALUES (@image_id, @tag_id)";
-                using (MySqlCommand ins_command = new MySqlCommand(ins, myqslconn))
-                {
-                    ins_command.Parameters.AddWithValue("tag_id", image_tags_item.tag_id);
-                    ins_command.Parameters.AddWithValue("image_id", image_tags_item.image_id);
-                    ins_command.ExecuteNonQuery();
-                }
-                Console.Write("\r" + (iii++).ToString("######"));
+                ins_command.ExecuteNonQuery();
             }
         }
         static List<string> GetAllUntiqeTags(List<CImage> img_list)
